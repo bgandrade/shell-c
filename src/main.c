@@ -25,9 +25,14 @@ int main(int argc, char *argv[]) {
         //strcmp retorna 0 quando a comparação é verdadeira, por isso precisar negar o resultado com !
         if (!strcmp("exit", command))
           return 0;
-        
+
+        // 2 // -------------------------------------
+        else if (!strncmp("echo ", command, 5))
+          printf("%s\n", command + 5); // desloca o ponteiro para o primeiro caractere após o echo + ' '
+       
         //comando não encontrado
-        printf("%s: command not found\n", command);
+        else 
+          printf("%s: command not found\n", command);
         }
 
 
