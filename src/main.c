@@ -20,6 +20,13 @@ int main(int argc, char *argv[]) {
       if (strlen(command) > 0){
         printf("%s: command not found\n", command);
       }
+
+      //caso exit, interrompe o loop e encerra.
+      //strcmp retorna 0 quando a comparação é verdadeira, por isso precisar negar o resultado com !
+      if (!strcmp("exit", command))
+        return 0;
+
+        
     };
   } while(1);
 
