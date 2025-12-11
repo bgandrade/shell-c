@@ -22,7 +22,10 @@ int cmd_help(char **args);
 int cmd_echo(char **args);
 int cmd_type(char **args);
 int cmd_exit(char **args);
+int cmd_test(char **args);
 void parser(char *str, char **args);
+
+int getPath(char **paths, int *count);
 
 //------------------------------------------------------------------
 
@@ -31,6 +34,7 @@ Command commands[] = {
     {"echo", cmd_echo},
     {"type", cmd_type},
     {"exit", cmd_exit},
+    {"test", cmd_test},
     {NULL, NULL} // Sentinela para saber onde o array termina
 };
 
@@ -125,6 +129,14 @@ int cmd_type(char **args)
   return 1;
 }
 
+int cmd_test(char **args)
+{
+  char **paths;
+  int count;
+  getPath(paths, &count);
+  return 1;
+}
+
 void parser(char *str, char **args)
 {
   bool in_arg = false;
@@ -158,4 +170,45 @@ void parser(char *str, char **args)
   }
   // insere um ponteiro nulo como sentilena para marcar o final do array.
   *args = NULL;
+}
+
+int getPath(char **paths, int *count)
+{
+  // 1. Obter o valor da variável de ambiente PATH
+  char *path_env = getenv("PATH");
+
+  // Verificar se a variável PATH foi encontrada
+  if (path_env == NULL)
+  {
+    printf("The env PATH not found\n");
+    return 1;
+  }
+
+  printf("Diretórios na PATH:\n");
+
+  // 2. Copiar a string PATH para um buffer modificável
+  // strtok() modifica a string original, então trabalhamos em uma cópia.
+  char *path_copy = strdup(path_env);
+
+  if (path_copy == NULL)
+  {
+    perror("Erro ao alocar memória para a cópia da PATH");
+    return 1;
+  }
+
+  // 3. Usar strtok para dividir a string em tokens (diretórios)
+  // O delimitador padrão no Linux é ':' (dois pontos)
+  char *dir = strtok(path_copy, ":");
+  int contador = 1;
+
+  while (dir != NULL)
+  {
+    printf("%d: %s\n", contador++, dir);
+
+    // 4. Continuar a busca pelo próximo token
+    dir = strtok(NULL, ":");
+  }
+
+  // Liberar a memória alocada por strdup()
+  free(path_copy);
 }
