@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #define MAX_ARGS 255
 #define MAX_INPUT 1024
@@ -24,8 +25,7 @@ int cmd_type(char **args);
 int cmd_exit(char **args);
 int cmd_test(char **args);
 void parser(char *str, char **args);
-
-int getPath(char **paths, int *count);
+char *searchInPath(char *file);
 
 //------------------------------------------------------------------
 
@@ -121,19 +121,27 @@ int cmd_type(char **args)
     }
     c++;
   }
-  // Se NULL não encontrou o comando solicitado
+  // Se NULL, o comando não é build in. Então pesquisa no path
   if (c->cmd_name == NULL)
   {
-    printf("%s: not found\n", args[1]);
+    char *path = searchInPath(args[1]);
+
+    if (path)
+    {
+      // caso o comando esteja no path
+      printf("%s is %s\n", args[1], path);
+    }
+    else
+    {
+      printf("%s: not found\n", args[1]);
+    }
   }
   return 1;
 }
 
 int cmd_test(char **args)
 {
-  char **paths;
-  int count;
-  getPath(paths, &count);
+  searchInPath(args[1]);
   return 1;
 }
 
@@ -172,7 +180,7 @@ void parser(char *str, char **args)
   *args = NULL;
 }
 
-int getPath(char **paths, int *count)
+char *searchInPath(char *file)
 {
   // 1. Obter o valor da variável de ambiente PATH
   char *path_env = getenv("PATH");
@@ -180,12 +188,9 @@ int getPath(char **paths, int *count)
   // Verificar se a variável PATH foi encontrada
   if (path_env == NULL)
   {
-    printf("The env PATH not found\n");
-    return 1;
+    perror("The env PATH not found\n");
+    return NULL;
   }
-
-  printf("Diretórios na PATH:\n");
-
   // 2. Copiar a string PATH para um buffer modificável
   // strtok() modifica a string original, então trabalhamos em uma cópia.
   char *path_copy = strdup(path_env);
@@ -193,7 +198,7 @@ int getPath(char **paths, int *count)
   if (path_copy == NULL)
   {
     perror("Erro ao alocar memória para a cópia da PATH");
-    return 1;
+    return NULL;
   }
 
   // 3. Usar strtok para dividir a string em tokens (diretórios)
@@ -201,14 +206,26 @@ int getPath(char **paths, int *count)
   char *dir = strtok(path_copy, ":");
   int contador = 1;
 
+  char buffer[1024]; // maior que 1024?
+  char *result = NULL;
+
   while (dir != NULL)
   {
-    printf("%d: %s\n", contador++, dir);
-
-    // 4. Continuar a busca pelo próximo token
+    // 4. Concatena a string para fazer a busca.
+    snprintf(buffer, sizeof(buffer), "%s/%s", dir, file);
+    // 5. Verifica se o arquivo existe e é executável
+    if (access(buffer, X_OK) == 0)
+    {
+      result = strdup(buffer);
+      break;
+    }
+    // 6. Continuar a busca pelo próximo token
     dir = strtok(NULL, ":");
   }
 
   // Liberar a memória alocada por strdup()
   free(path_copy);
+
+  // retorna uma string com o path completo do arquivo ou NULL se não encontrar
+  return result;
 }
